@@ -2,7 +2,7 @@
 
 # IKMB VEP Pipeline
 
-Run VEP on any number of VCFs
+Run VEP on any number of VCF files. This pipeline only works on the IKMB MEDCluster due to the inclusion of VEP plugins and flatfile databases. 
 
 ## Usage
 

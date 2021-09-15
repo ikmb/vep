@@ -157,8 +157,9 @@ process vep {
                 --sift p \
         	--polyphen p \
 	        --check_existing \
-		--canonical
-
+		--canonical \
+		--buffer_site 5000	
+	
 	"""
 }
 
