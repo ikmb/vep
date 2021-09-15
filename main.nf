@@ -48,9 +48,6 @@ def summary = [:]
 // INPUT OPTIONS
 // #############
 
-// Sample input file
-inputFile = file(params.samples)
-
 // Giving this pipeline run a name
 params.run_name = false
 run_name = ( params.run_name == false) ? "${workflow.sessionId}" : "${params.run_name}"
@@ -66,13 +63,13 @@ params.assembly = "GRCh38"
 FASTA = file(params.genomes[ params.assembly ].fasta)
 DBSNP = file(params.genomes[ params.assembly ].dbsnp )
 
+Channel.fromPath(params.vcfs)
+	.ifEmpty { exit 1; "No VCF files found" }
+	.map { b -> [ file(b), file("${b}.tbi") ] }
+	.set { vcfs }
+
 // Whether to send a notification upon workflow completion
 params.email = false
-
-if(params.email == false) {
-	exit 1, "You must provide an Email address to which pipeline updates are send!"
-}
-
 
 if (params.assembly != "GRCh38") {
 	exit 1, "VEP is not currently set up to work with defunct assembly versions...please use GRCh38"
@@ -86,31 +83,27 @@ if (params.dbnsfp_db) {
 	dbNSFP_DB = file(params.dbnsfp_db)
 	if (!dbNSFP_DB.exists()) {
 		exit 1, "Could not find the specified dbNSFP database..."
-		}
-	} else {
-		exit 1, "No dbNSFP database defined for this execution profile..."
 	}
+}
 
-	if (params.dbscsnv_db) {
-		dbscSNV_DB = file(params.dbscsnv_db)
-		if ( !dbscSNV_DB.exists() ) {
-			exit 1, "Could not find the specified dbscSNV database..."
-		}
-	} else {
-		exit 1, "No dbscSNV database defined for this execution profile..."
+if (params.dbscsnv_db) {
+	dbscSNV_DB = file(params.dbscsnv_db)
+	if ( !dbscSNV_DB.exists() ) {
+		exit 1, "Could not find the specified dbscSNV database..."
 	}
+} else {
+	exit 1, "No dbscSNV database defined for this execution profile..."
+}
 
-	if (params.cadd_snps && params.cadd_indels) {
-		CADD_SNPS = file(params.cadd_snps)
-		CADD_INDELS = file(params.cadd_indels)
-		if (!CADD_SNPS.exists() || !CADD_INDELS.exists() )
-			exit 1, "Missing CADD SNPs and/or Indel references..."
-		}
-	else {
-		exit 1, "CADD SNP and/or Indel reference files not defined for this execution profile..."
+if (params.cadd_snps  && params.cadd_indels ) {
+	CADD_SNPS = file(params.cadd_snps)
+	CADD_INDELS = file(params.cadd_indels)
+	if (!CADD_SNPS.exists() || !CADD_INDELS.exists() ) {
+		exit 1, "Missing CADD SNPs and/or Indel references..."
 	}
-
-}	
+} else {
+	exit 1, "CADD SNP and/or Indel reference files not defined for this execution profile..."
+}
 
 // WORKFLOW starts here
 
@@ -122,7 +115,7 @@ process vep {
 
 
 	input:
-        set file(vcf),file(vcf_index) from VcfToVep
+        set file(vcf),file(vcf_index) from vcfs
 
 	output:
         file(vcf_vep)
