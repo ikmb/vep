@@ -21,3 +21,7 @@ Whether to remove individual genotype columns from the VCF first (useful for ver
 ### `--revel`[ true | false (default) ]
 
 Whether to produce REVEL scores as well
+
+### `--refseq`[ true | false (default)
+
+Whether to annotate against RefSeq transcripts (default is EnsEMBL/Gencode)

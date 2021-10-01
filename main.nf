@@ -169,7 +169,9 @@ process vep {
 	if (params.revel) {
 		options = "--plugin REVEL,${params.revel}"
 	}
-
+	if (params.refseq) {
+		options = options + " --refseq"
+	}
 	"""
 		export PERL5LIB=${params.vep_plugin_dir}
 
@@ -189,7 +191,6 @@ process vep {
                 --plugin ExACpLI \
 		--plugin LoFtool \
 		--plugin UTRannotator \
-		$options \
 		--compress_output bgzip \
                 --fasta $FASTA \
                 --fork ${task.cpus} \
@@ -198,6 +199,7 @@ process vep {
         	--polyphen p \
 	        --check_existing \
 		--canonical \
+		$options
 	
 	"""
 }
