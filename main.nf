@@ -121,6 +121,36 @@ log.info "========================================="
 
 // WORKFLOW starts here
 
+if (params.sites) {
+
+	process vcf_sites_only {
+
+		label 'gatk'
+
+		publishDir "${params.outdir}/VCFS_SITES_ONLY", mode: 'copy'
+
+		input:
+		set file(vcf),file(vcf_index) from vcfs
+
+		output:
+		set file(vcf_sites),file(vcf_sites_index) into vcf_sites
+
+		script:
+	
+		vcf_sites = vcf.getBaseName() + ".sites.vcf.gz"
+		vcf_sites_index = vcf_sites + ".tbi"
+
+		"""
+			gatk SelectVariants -V $vcf --sites-only-vcf-output -O $vcf_sites -OVI
+		"""
+	}
+
+} else {
+
+	vcf_sites = vcfs
+
+}
+
 process vep {
 
         label 'vep'
@@ -128,15 +158,21 @@ process vep {
 	publishDir "${params.outdir}/VEP", mode: 'copy'
 
 	input:
-        set file(vcf),file(vcf_index) from vcfs
+        set file(vcf),file(vcf_index) from vcf_sites
 
 	output:
         file(vcf_vep)
 
 	script:
-	vcf_vep = vcf.getBaseName() + ".vep.vcf.gz"
+	vcf_vep = vcf.getBaseName() + ".vep.txt.gz"
+	options = ""
+	if (params.revel) {
+		options = "--plugin REVEL,${params.revel}"
+	}
 
 	"""
+		export PERL5LIB=${params.vep_plugin_dir}
+
                 vep --offline \
                 --cache \
                 --dir ${params.vep_cache_dir} \
@@ -144,21 +180,24 @@ process vep {
                 --assembly $params.assembly \
                 -i $vcf \
                 --format vcf \
+		--tab \
+		--hgvs \
                 -o $vcf_vep --dir_plugins ${params.vep_plugin_dir} \
                 --plugin dbNSFP,$dbNSFP_DB,${params.dbnsfp_fields} \
                 --plugin dbscSNV,$dbscSNV_DB \
                 --plugin CADD,${params.cadd_snps},${params.cadd_indels} \
                 --plugin ExACpLI \
+		--plugin LoFtool \
+		--plugin UTRannotator \
+		$options \
 		--compress_output bgzip \
                 --fasta $FASTA \
                 --fork ${task.cpus} \
-                --vcf \
                 --per_gene \
                 --sift p \
         	--polyphen p \
 	        --check_existing \
 		--canonical \
-		--buffer_site 5000	
 	
 	"""
 }
