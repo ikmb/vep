@@ -29,7 +29,9 @@ Usage: nextflow run ikmb/vep --assembly GRCh38 --vcfs /path/to/*.vcf.gz
 
 Required parameters:
 --assembly                     Name of the reference assembly to use
+--vcfs			       List of VCFs to process
 --email 		       Email address to send reports to (enclosed in '')
+--sites			       Remove individual genotype data to speed up processing of very large files
 Output:
 --outdir                       Local directory to which all output is written (default: results)
 """
@@ -72,37 +74,28 @@ Channel.fromPath(params.vcfs)
 params.email = false
 
 if (params.assembly != "GRCh38") {
-	exit 1, "VEP is not currently set up to work with defunct assembly versions...please use GRCh38"
+	log.info "!!!Please consider using a more recent genome version!!!"
 }
 
 if (!params.vep_cache_dir || !params.vep_plugin_dir) {
 	exit 1, "Missing VEP cache and/or plugin directory..."
 }
 
-if (params.dbnsfp_db) {
-	dbNSFP_DB = file(params.dbnsfp_db)
-	if (!dbNSFP_DB.exists()) {
-		exit 1, "Could not find the specified dbNSFP database..."
-	}
+dbNSFP_DB = file(params.genomes[ params.assembly ].dbnsfp_db)
+if (!dbNSFP_DB.exists()) {
+	exit 1, "Could not find the specified dbNSFP database..."
 }
 
-if (params.dbscsnv_db) {
+dbscSNV_DB = file(params.genomes[ params.assembly].dbscsnv_db)
+if (!dbscSNV_DB.exists()) {
 	dbscSNV_DB = file(params.dbscsnv_db)
-	if ( !dbscSNV_DB.exists() ) {
-		exit 1, "Could not find the specified dbscSNV database..."
-	}
-} else {
-	exit 1, "No dbscSNV database defined for this execution profile..."
+	exit 1, "Could not find the specified dbscSNV database..."
 }
 
-if (params.cadd_snps  && params.cadd_indels ) {
-	CADD_SNPS = file(params.cadd_snps)
-	CADD_INDELS = file(params.cadd_indels)
-	if (!CADD_SNPS.exists() || !CADD_INDELS.exists() ) {
-		exit 1, "Missing CADD SNPs and/or Indel references..."
-	}
-} else {
-	exit 1, "CADD SNP and/or Indel reference files not defined for this execution profile..."
+CADD_SNPS = file(params.genomes[ params.assembly].cadd_snps)
+CADD_INDELS = file(params.genomes[ params.assembly].cadd_indels)
+if ( !CADD_SNPS.exists() || !CADD_INDELS.exists() ) {
+	exit 1, "Missing CADD SNPs and/or Indel references..."
 }
 
 // Header log info
