@@ -1,5 +1,7 @@
 #!/usr/bin/env nextflow
 
+nextflow.enable.dsl=1
+
 /**
 ===============================
 Exome Pipeline
@@ -81,23 +83,6 @@ if (!params.vep_cache_dir || !params.vep_plugin_dir) {
 	exit 1, "Missing VEP cache and/or plugin directory..."
 }
 
-dbNSFP_DB = file(params.genomes[ params.assembly ].dbnsfp_db)
-if (!dbNSFP_DB.exists()) {
-	exit 1, "Could not find the specified dbNSFP database..."
-}
-
-dbscSNV_DB = file(params.genomes[ params.assembly].dbscsnv_db)
-if (!dbscSNV_DB.exists()) {
-	dbscSNV_DB = file(params.dbscsnv_db)
-	exit 1, "Could not find the specified dbscSNV database..."
-}
-
-CADD_SNPS = file(params.genomes[ params.assembly].cadd_snps)
-CADD_INDELS = file(params.genomes[ params.assembly].cadd_indels)
-if ( !CADD_SNPS.exists() || !CADD_INDELS.exists() ) {
-	exit 1, "Missing CADD SNPs and/or Indel references..."
-}
-
 // Header log info
 log.info "========================================="
 log.info "VEP pipeline v${params.version}"
@@ -157,14 +142,22 @@ process vep {
         file(vcf_vep)
 
 	script:
-	vcf_vep = vcf.getBaseName() + ".vep.txt.gz"
-	options = ""
-	if (params.revel) {
-		options = "--plugin REVEL,${params.revel}"
-	}
+	options = " "
+	suffix = ""
+
 	if (params.refseq) {
 		options = options + " --refseq"
 	}
+	if (params.json) {
+		options = options + " --json"
+		suffix = ".json.gz"
+	} else {
+		options = options + " --vcf"
+		suffix = ".vep.vcf.gz"
+	}
+
+	vcf_vep = vcf.getBaseName() + suffix
+
 	"""
 		export PERL5LIB=${params.vep_plugin_dir}
 
@@ -175,15 +168,15 @@ process vep {
                 --assembly $params.assembly \
                 -i $vcf \
                 --format vcf \
-		--tab \
 		--hgvs \
                 -o $vcf_vep --dir_plugins ${params.vep_plugin_dir} \
-                --plugin dbNSFP,$dbNSFP_DB,${params.dbnsfp_fields} \
-                --plugin dbscSNV,$dbscSNV_DB \
+          	--plugin dbNSFP,${params.dbnsfp_db},${params.dbnsfp_fields} \
+                --plugin dbscSNV,${params.dbscsnv_db} \
                 --plugin CADD,${params.cadd_snps},${params.cadd_indels} \
                 --plugin ExACpLI \
-		--plugin LoFtool \
-		--plugin UTRannotator \
+                --plugin UTRannotator \
+                --plugin Mastermind,${params.vep_mastermind} \
+                --plugin SpliceAI,${params.spliceai_fields} \
 		--compress_output bgzip \
                 --fasta $FASTA \
                 --fork ${task.cpus} \
