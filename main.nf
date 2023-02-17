@@ -177,6 +177,7 @@ process vep {
                 --plugin UTRannotator \
                 --plugin Mastermind,${params.vep_mastermind} \
                 --plugin SpliceAI,${params.spliceai_fields} \
+		--af_gnomad \
 		--compress_output bgzip \
                 --fasta $FASTA \
                 --fork ${task.cpus} \
