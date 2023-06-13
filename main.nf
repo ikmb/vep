@@ -31,9 +31,9 @@ Usage: nextflow run ikmb/vep --assembly GRCh38 --vcfs /path/to/*.vcf.gz
 
 Required parameters:
 --assembly                     Name of the reference assembly to use
---vcfs			       List of VCFs to process
---email 		       Email address to send reports to (enclosed in '')
---sites			       Remove individual genotype data to speed up processing of very large files
+--vcfs                   List of VCFs to process
+--email                Email address to send reports to (enclosed in '')
+--sites                   Remove individual genotype data to speed up processing of very large files
 Output:
 --outdir                       Local directory to which all output is written (default: results)
 """
@@ -57,7 +57,7 @@ params.run_name = false
 run_name = ( params.run_name == false) ? "${workflow.sessionId}" : "${params.run_name}"
 
 if (params.run_name == false) {
-	log.info "No run name was specified, using ${run_name} instead"
+    log.info "No run name was specified, using ${run_name} instead"
 }
 
 // This will eventually enable switching between multiple assembly versions
@@ -68,19 +68,19 @@ FASTA = file(params.genomes[ params.assembly ].fasta)
 DBSNP = file(params.genomes[ params.assembly ].dbsnp )
 
 Channel.fromPath(params.vcfs)
-	.ifEmpty { exit 1; "No VCF files found" }
-	.map { b -> [ file(b), file("${b}.tbi") ] }
-	.set { vcfs }
+    .ifEmpty { exit 1; "No VCF files found" }
+    .map { b -> [ file(b), file("${b}.tbi") ] }
+    .set { vcfs }
 
 // Whether to send a notification upon workflow completion
 params.email = false
 
 if (params.assembly != "GRCh38") {
-	log.info "!!!Please consider using a more recent genome version!!!"
+    log.info "!!!Please consider using a more recent genome version!!!"
 }
 
 if (!params.vep_cache_dir || !params.vep_plugin_dir) {
-	exit 1, "Missing VEP cache and/or plugin directory..."
+    exit 1, "Missing VEP cache and/or plugin directory..."
 }
 
 // Header log info
@@ -101,100 +101,100 @@ log.info "========================================="
 
 if (params.sites) {
 
-	process vcf_sites_only {
+    process vcf_sites_only {
 
-		label 'gatk'
+        label 'gatk'
 
-		publishDir "${params.outdir}/VCFS_SITES_ONLY", mode: 'copy'
+        publishDir "${params.outdir}/VCFS_SITES_ONLY", mode: 'copy'
 
-		input:
-		set file(vcf),file(vcf_index) from vcfs
+        input:
+        set file(vcf),file(vcf_index) from vcfs
 
-		output:
-		set file(vcf_sites),file(vcf_sites_index) into vcf_sites
+        output:
+        set file(vcf_sites),file(vcf_sites_index) into vcf_sites
 
-		script:
-	
-		vcf_sites = vcf.getBaseName() + ".sites.vcf.gz"
-		vcf_sites_index = vcf_sites + ".tbi"
+        script:
+    
+        vcf_sites = vcf.getBaseName() + ".sites.vcf.gz"
+        vcf_sites_index = vcf_sites + ".tbi"
 
-		"""
-			gatk SelectVariants -V $vcf --sites-only-vcf-output -O $vcf_sites -OVI
-		"""
-	}
+        """
+            gatk SelectVariants -V $vcf --sites-only-vcf-output -O $vcf_sites -OVI
+        """
+    }
 
 } else {
 
-	vcf_sites = vcfs
+    vcf_sites = vcfs
 
 }
 
 process vep {
 
-        label 'vep'
+    label 'vep'
 
-	publishDir "${params.outdir}/VEP", mode: 'copy'
+    publishDir "${params.outdir}/VEP", mode: 'copy'
 
-	input:
-        set file(vcf),file(vcf_index) from vcf_sites
+    input:
+    set file(vcf),file(vcf_index) from vcf_sites
 
-	output:
-        file(vcf_vep)
+    output:
+    file(vcf_vep)
 
-	script:
-	options = " "
-	suffix = ""
+    script:
+    options = " "
+    suffix = ""
 
-	if (params.refseq) {
-		options = options + " --refseq"
-	}
-	if (params.json) {
-		options = options + " --json"
-		suffix = ".json.gz"
-	} else {
-		options = options + " --vcf"
-		suffix = ".vep.vcf.gz"
-	}
+    if (params.refseq) {
+        options = options + " --refseq"
+    }
+    if (params.json) {
+        options = options + " --json"
+        suffix = ".json.gz"
+    } else {
+        options = options + " --vcf"
+        suffix = ".vep.vcf.gz"
+    }
 
-	vcf_vep = vcf.getBaseName() + suffix
+    vcf_vep = vcf.getBaseName() + suffix
 
-	"""
-		export PERL5LIB=${params.vep_plugin_dir}
+    """
+    export PERL5LIB=${params.vep_plugin_dir}
 
-                vep --offline \
-                --cache \
-                --dir ${params.vep_cache_dir} \
-                --species homo_sapiens \
-                --assembly $params.assembly \
-                -i $vcf \
-                --format vcf \
-		--hgvs \
-                -o $vcf_vep --dir_plugins ${params.vep_plugin_dir} \
-          	--plugin dbNSFP,${params.dbnsfp_db},${params.dbnsfp_fields} \
-                --plugin dbscSNV,${params.dbscsnv_db} \
-                --plugin CADD,${params.cadd_snps},${params.cadd_indels} \
-                --plugin ExACpLI \
-                --plugin UTRannotator \
-                --plugin Mastermind,${params.vep_mastermind} \
-                --plugin SpliceAI,${params.spliceai_fields} \
-		--af_gnomad \
-		--compress_output bgzip \
-                --fasta $FASTA \
-                --fork ${task.cpus} \
-                --per_gene \
-                --sift p \
-        	--polyphen p \
-	        --check_existing \
-		--canonical \
-		$options
-	
-	"""
+    vep --offline \
+        --cache \
+        --dir ${params.vep_cache_dir} \
+        --species homo_sapiens \
+        --assembly $params.assembly \
+        -i $vcf \
+        --format vcf \
+        --hgvs \
+        -o $vcf_vep --dir_plugins ${params.vep_plugin_dir} \
+        --plugin dbNSFP,${params.dbnsfp_db},${params.dbnsfp_fields} \
+        --plugin dbscSNV,${params.dbscsnv_db} \
+        --plugin CADD,${params.cadd_snps},${params.cadd_indels} \
+        --plugin ExACpLI \
+        --plugin UTRannotator \
+        --plugin Mastermind,${params.vep_mastermind} \
+        --plugin SpliceAI,${params.spliceai_fields} \
+        --af_gnomad \
+        --compress_output bgzip \
+        --fasta $FASTA \
+        --fork ${task.cpus} \
+        --per_gene \
+        --sift p \
+        --polyphen p \
+        --check_existing \
+        --canonical \
+        $options
+    
+    """
 }
 
 workflow.onComplete {
 
   log.info "========================================="
-  log.info "Duration:		$workflow.duration"
+  log.info "Duration:        $workflow.duration"
   log.info "========================================="
 
 }
