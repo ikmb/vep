@@ -20,6 +20,8 @@ Channel.fromPath(params.vcf).map { f ->
 ch_versions = Channel.from([])
 multiqc_files = Channel.from([])
 
+log.info "Running with options: ${params.vep_options}"
+
 workflow VEP {
 
     main:
