@@ -15,7 +15,8 @@ process ENSEMBL_VEP {
     path("versions.yml"), emit: versions
 
     script:
-
+    vep_vcf = v.getBaseName() + ".vep.vcf"
+    
     """
     export PERL5LIB=${params.vep_plugin_dir}
 
@@ -24,15 +25,13 @@ process ENSEMBL_VEP {
         --dir ${params.vep_cache_dir} \
         --species homo_sapiens \
         --assembly $params.assembly \
-        -i $vcf \
+        -i $v \
         --format vcf \
         --hgvs \
-        -o $vcf_vep --dir_plugins ${params.vep_plugin_dir} \
+        -o $vep_vcf --dir_plugins ${params.vep_plugin_dir} \
         --plugin dbNSFP,${params.dbnsfp_db},${params.dbnsfp_fields} \
         --plugin dbscSNV,${params.dbscsnv_db} \
         --plugin CADD,${params.cadd_snps},${params.cadd_indels} \
-        --plugin ExACpLI \
-        --plugin UTRannotator \
         --plugin Mastermind,${params.vep_mastermind} \
         --plugin SpliceAI,${params.spliceai_fields} \
         --af_gnomadg \

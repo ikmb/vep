@@ -8,7 +8,7 @@ process MULTIQC {
     path('*')
 
     output:
-    path('*.html'), emit: html
+    path('*.html'), emit: report
     path("versions.yml"), emit: versions
 
     script:

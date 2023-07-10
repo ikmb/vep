@@ -2,7 +2,7 @@
 // This file holds several functions specific to the workflow/esga.nf in the nf-core/esga pipeline
 //
 
-class WorkflowPipeline {
+class WorkflowVep {
 
     //
     // Check and validate parameters
