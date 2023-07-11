@@ -2,7 +2,7 @@ process VEP2XLS {
 
     label 'medium_serial'
 
-    container 'ikmb/exome-seq:5.2'
+    container 'ikmb/vep:1.0'
 
     publishDir "${params.outdir}/VEP", mode: 'copy'
 
@@ -16,9 +16,7 @@ process VEP2XLS {
     sheet = vcf.getBaseName() + ".xlsx"
 
     """
-    zcat $vcf > variants.vcf
-    vep2xls.rb -i variants.vcf -o $sheet
-    rm variants.vcf
+    zcat $vcf | vep2xls_fast.rb  -o $sheet
     """
 
 }
