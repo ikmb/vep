@@ -2,7 +2,7 @@ process VEP2XLS {
 
     label 'medium_serial'
 
-    container 'ikmb/vep:latest'
+    container 'ikmb/vep:1.0'
 
     publishDir "${params.outdir}/VEP", mode: 'copy'
 
