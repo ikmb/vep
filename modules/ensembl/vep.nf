@@ -15,7 +15,7 @@ process ENSEMBL_VEP {
     path("versions.yml"), emit: versions
 
     script:
-    vep_vcf = v.getBaseName() + ".vep.vcf"
+    vep_vcf = v.getBaseName() + ".vep.vcf.gz"
 
     """
     export PERL5LIB=${params.vep_plugin_dir}

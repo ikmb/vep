@@ -26,8 +26,6 @@ class VEPEntry
         @seq.gsub!(/^chr/, '')
         @csq = []
 
-        c_len = nil
-
         csq_field = @info.split(";").find { |e| e.include?("CSQ") }
         if csq_field
             tmp = csq_field.split("=")[-1]
@@ -73,6 +71,7 @@ class VEPEntry
             answer << calls.join("/")
 		end
 
+        return answer
 	end
 
     def genotype(idx)
@@ -116,7 +115,7 @@ end
 ### Get the script arguments and open relevant files
 options = OpenStruct.new()
 opts = OptionParser.new()
-opts.on("-i","--outfile", "=INFILE","Infile file") {|argument| options.infile = argument }
+opts.on("-i","--infile", "=INFILE","Infile file") {|argument| options.infile = argument }
 opts.on("-o","--outfile", "=OUTFILE","Output file") {|argument| options.outfile = argument }
 opts.on("-h","--help","Display the usage information") {
     puts opts
@@ -135,26 +134,21 @@ color = {
 workbook = FastExcel.open(options.outfile, constant_memory: true)
 
 workbook.default_format.set(
-    font_size: 0, # user's default
+    font_size: 10, # user's default
     font_family: "Arial"
 )
-
-even                = workbook.add_format(bg_color: color["even"])
-uneven              = workbook.add_format(bg_color: color["uneven"])
 
 bold                = workbook.bold_format
 sheet               = workbook.add_worksheet("VEP results")
 sheet.auto_width    = true
 
-sheet.set_column(0, 0, FastExcel::DEF_COL_WIDTH, bold)
+even                = workbook.add_format(bg_color: color["even"])
+uneven              = workbook.add_format(bg_color: color["uneven"])
 
 csq_header          = []
 header              = []
 
-delimiter           = ";"
-
 counter             = 0
-c_len               = nil
 
 while (line = input_stream.gets)
 
@@ -173,9 +167,9 @@ while (line = input_stream.gets)
         header_samples = line.gsub(/^#/, '').split("\t")[9..-1]
 
         full_header = header + csq_header + header_samples
-        full_header = full_header.select {|h| h != "FORMAT" && h != "INFO" }.push(bold)
+        full_header = full_header.select {|h| h != "FORMAT" && h != "INFO" }
 
-        sheet.append_row(full_header)
+        sheet.append_row(full_header,bold)
 		
     end    
     
@@ -193,30 +187,20 @@ while (line = input_stream.gets)
 
         values = [ e.seq , e.pos, e.rsid.gsub(";",","), e.ref, e.alt, e.qual, e.filter ]
 
-		counter += 1
+        counter += 1
 
-        values.each_with_index do |v,i|
-            values << v
-            col = i
-        end
-
-        csq_header.each_with_index do |cq,i|
-            col += 1
+        csq_header.each do |cq|
             values << csq_t[cq]
         end
 
-        samples.each_with_index do |s,i|
-            col += 1
-            ann = e.annotations(i)
-            gt = e.genotype(i)
-            values << gt.join("/")
-        end
+        values = values + e.genotypes
 
-        counter.even? ? values << even : values << uneven
-        sheet.append_row(values)
+        counter.even? ? bg = even : bg = uneven
 
-    end    
-    #break if counter > 50
+        sheet.append_row(values,bg)
+
+    end
+    
 end
 
 workbook.close
