@@ -1,5 +1,7 @@
 process VEP2XLS {
 
+    label 'medium_serial'
+
     container 'ikmb/exome-seq:5.2'
 
     publishDir "${params.outdir}/VEP", mode: 'copy'

@@ -27,13 +27,14 @@ process ENSEMBL_VEP {
         --assembly $params.assembly \
         -i $v \
         --format vcf \
+        --vcf \
+        --compress_output bgzip \
         -o $vep_vcf --dir_plugins ${params.vep_plugin_dir} \
         --plugin dbNSFP,${params.dbnsfp_db},${params.dbnsfp_fields} \
         --plugin dbscSNV,${params.dbscsnv_db} \
         --plugin CADD,${params.cadd_snps},${params.cadd_indels} \
         --plugin Mastermind,${params.vep_mastermind} \
         --plugin SpliceAI,${params.spliceai_fields} \
-        --compress_output bgzip \
         --fasta $fasta \
         --fork ${task.cpus} \
         ${params.vep_options} 

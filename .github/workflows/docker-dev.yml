@@ -1,4 +1,4 @@
-name: Docker  Release
+name: Docker Dev
 
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
@@ -6,12 +6,15 @@ name: Docker  Release
 # documentation.
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [ devel ]
+  pull_request:
+    branches: [ devel ]
+
 
 jobs:
   push_dockerhub:
-    name: Push new Docker image to Docker Hub (release)
+    name: Push new Docker image to Docker Hub (latest)
     runs-on: ubuntu-latest
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -21,11 +24,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build new docker image
-        run: docker build --no-cache . -t ikmb/PIPELINE:latest
+        run: docker build --no-cache . -t ikmb/vep:devel
 
-      - name: Push Docker image to DockerHub (release)
+      - name: Push Docker image to DockerHub (latest)
         run: |
           echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-          docker push ikmb/PIPELINE:latest
-          docker tag ikmb/PIPELINE:latest ikmb/PIPELINE:${{ github.event.release.tag_name }}
-          docker push ikmb/PIPELINE:${{ github.event.release.tag_name }}
+          docker push ikmb/vep:devel
