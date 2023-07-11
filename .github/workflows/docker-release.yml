@@ -27,5 +27,5 @@ jobs:
         run: |
           echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
           docker push ikmb/vep:latest
-          docker tag ikmb/vep:latest ikmb/PIPELINE:${{ github.event.release.tag_name }}
+          docker tag ikmb/vep:latest ikmb/vep:${{ github.event.release.tag_name }}
           docker push ikmb/vep:${{ github.event.release.tag_name }}
